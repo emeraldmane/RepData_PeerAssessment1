@@ -1,25 +1,116 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "PA1_template.Rmd"
+author: "emeraldmane"
+date: "Sunday, September 14, 2014"
+output: html_document
 ---
 
+# Reproducible Research: Peer Assessment 1
 
-## Loading and preprocessing the data
+##Loading and preprocessing the data
 
+```{r}
+activity <- read.csv("activity.csv", header = TRUE)
+activity <- transform(activity, date = as.Date(date))
 
-
-## What is mean total number of steps taken per day?
-
-
-
-## What is the average daily activity pattern?
-
-
-
-## Imputing missing values
+library(ggplot2)
+library(lattice)
+library(plyr)
+```
 
 
+##What is mean total number of steps taken per day?
 
-## Are there differences in activity patterns between weekdays and weekends?
+```{r}
+# Plot with missing values
+totalsteps <- ddply(activity, .(date), summarise, steps = sum(steps))
+hist(totalsteps$steps, main="Number of Steps", 
+     xlab="Total number of steps taken each day", 
+     breaks = 10, 
+     xlim = c(0, 25000), 
+     ylim = c(0, 20), 
+     col="light blue")
+
+# Mean and median total number of steps taken per day
+mean(totalsteps$steps, na.rm=T)
+median(totalsteps$steps, na.rm=T)
+```
+
+
+##What is the average daily activity pattern?
+
+```{r}
+AvgStepsPerInterval <- ddply(activity, .(interval), summarise, steps = mean(steps, na.rm = T))
+
+plot(AvgStepsPerInterval$interval, AvgStepsPerInterval$steps, type="l", 
+     col="light blue",
+     xlab="5-minute Intervals", 
+     ylab="Avg # of Steps",
+     main="Average Daily activity pattern")
+
+# Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+MaxSteps <- which.max(AvgStepsPerInterval$mean)
+MaxInterval <- AvgStepsPerInterval$interval[MaxSteps]
+```
+
+##Imputing missing values
+
+```{r}
+# Total number of missing values in the dataset
+summary(activity$steps)
+
+# Imputing NA values
+na.replace <- function(actvty) {
+  ddply(actvty, .(interval), 
+        function(ddat) {
+    steps <- ddat$steps
+    ddat$steps[is.na(steps)] <- mean(steps, na.rm = TRUE)
+    return(ddat)
+  })
+}
+
+# Plots with imputed NA values
+NewActivity <- na.replace(activity)
+
+NewStepsPerDay <- ddply(NewActivity, .(date), summarise, steps = sum(steps))
+hist(NewStepsPerDay$steps, main="Number of Steps", 
+     xlab="Total number of steps taken each day", 
+     breaks = 10, 
+     xlim = c(0, 25000), 
+     ylim = c(0, 25),
+     col="light green")
+
+# Mean and median total number of steps taken per day
+mean(NewStepsPerDay$steps, na.rm=T)
+median(NewStepsPerDay$steps, na.rm=T)
+```
+
+Mean values did not change, but median value changed slightly.
+
+##Are there differences in activity patterns between weekdays and weekends?
+
+```{r}
+# Defining weekends & weekdays
+weekParts <- c("Weekday", "Weekend")
+PartitionedWeek <- function(date) {
+  day <- weekdays(date)
+  part <- factor("Weekday", weekParts)
+  if (day %in% c("Saturday", "Sunday"))
+    part <- factor("Weekend", weekParts)
+  return(part)
+}
+
+# Plots differentiating weekend activity & weekday activity
+NewActivity$weekpart <- sapply(NewActivity$date, PartitionedWeek)
+
+DateAvgSteps <- ddply(NewActivity,
+                  .(interval, weekpart),
+                  summarise,
+                  mean = mean(steps))
+
+p <- ggplot(DateAvgSteps, aes(x = interval, y = mean))
+p <- p + geom_line() + facet_grid(. ~ weekpart, )
+p <- p + ggtitle("Activity patterns on weekends and weekdays")
+p + xlab("Interval") + ylab("Number of steps")
+```
+
