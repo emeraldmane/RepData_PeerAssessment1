@@ -107,7 +107,7 @@ AvgStepsPerInterval[which.max(AvgStepsPerInterval$steps),]</code></pre>
 summary(activity$steps)</code></pre>
 <pre><code>##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
 ##     0.0     0.0     0.0    37.4    12.0   806.0    2304</code></pre>
-<pre class="r"><code># Imputing NA values
+<pre class="r"><code># Imputing NA values by using mean valuesof the five minute interval
 na.replace &lt;- function(actvty) {
   ddply(actvty, .(interval), 
         function(ddat) {

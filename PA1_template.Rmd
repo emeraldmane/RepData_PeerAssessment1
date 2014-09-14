@@ -58,7 +58,7 @@ AvgStepsPerInterval[which.max(AvgStepsPerInterval$steps),]
 # Total number of missing values in the dataset
 summary(activity$steps)
 
-# Imputing NA values
+# Imputing NA values by using mean valuesof the five minute interval
 na.replace <- function(actvty) {
   ddply(actvty, .(interval), 
         function(ddat) {
